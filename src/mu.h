@@ -67,6 +67,9 @@
 /********************
   general constants
   ********************/
+
+extern "C" int yylex();
+
 #define MURPHI_VERSION "Murphi Release 3.1"
 #define LAST_DATE "Jan 29 1999"
 
