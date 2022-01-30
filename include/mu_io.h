@@ -156,7 +156,7 @@ public:
 class argmain_alg
 {
 public:
-  enum MainAlgorithmtype { Nothing, Simulate, Verify_bfs, Verify_dfs };
+  enum MainAlgorithmtype { Nothing, Simulate, Verify_bfs, Verify_dfs, Verify_rw };
   MainAlgorithmtype mode; /* What to do. */
 private:
   bool initialized;
@@ -273,6 +273,9 @@ public:
   // testing parameter
   argnum test_parameter1;
   argnum test_parameter2;
+
+  // random walk options
+  argnum pthread_count;
 
   // miscelleneous
   argnum  loopmax;

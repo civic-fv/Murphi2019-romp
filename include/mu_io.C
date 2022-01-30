@@ -77,6 +77,7 @@
 
 // Verification Strategy
 #define SIMULATE_FLAG   "-s"    /* simulate instead of verifying. */
+#define VERIFY_RW_FLAG  "-r"    /* verify with random state walk (specify number of threads with '-pt' flag) */
 #define VERIFY_FLAG     "-v"    /* verify with breadth-first search. */
 #define VERIFY_BFS_FLAG "-vbfs" /* Ditto. */
 #define VERIFY_DFS_FLAG "-vdfs" /* verify with depth-first search. */
@@ -85,6 +86,11 @@
 #define MEM_MEG_PREFIX  "-m"    /* Memory allotment in Meg. */
 #define MEM_K_PREFIX    "-k"    /* Memory allotment in K. */
 #define LOOPMAX_PREFIX  "-loop" /* number of times you can go around a loop. */
+
+// random walk options
+#define RW_PTHREAD_PREFIX  "-pt"  /* number of random walks to start in separate threads */
+#define RW_SEED_PREFIX     "-rs"  /* set the random seed(s) for the threads in random walk */
+#define RW_ENABLE_MPI_FLAG "-mpi" /* *NOT YET IMPLIMENTED* enable MPI for thread distribution of random walks */
 
 // progress
 #define VERBOSE_FLAG    "-p"    /* Print every time, with lots of detail. */
@@ -376,6 +382,8 @@ argclass::argclass(int ac, char** av)
   multiset_reduction (TRUE, "multiset option"),
   test_parameter1 (100,"testing parameter1"),
   test_parameter2 (100,"testing parameter2"),
+  // randowm walk options
+  thread_count    (1,"number of threads to use in multithreaded random walk verification"),
 #ifdef HASHC
   num_bits        (DEFAULT_BITS, "stored bits"),   // added by Uli
   trace_file      (FALSE, "trace info file"),
@@ -478,10 +486,10 @@ void argclass::ProcessOptions(string_iterator *options)
 	    {
 	      sscanf( options->nextvalue(), "%s", temp_str );
 	      if (isdigit(temp_str[0]))
-		{
-		  sscanf( temp_str, "%u", (unsigned long) &temp );
-		  options->next();
-		}
+        {
+          sscanf( temp_str, "%u", (unsigned long) &temp );
+          options->next();
+        }
 	      else	  
 		Error.Notrace("Unrecognized memory size.  Do '%s -h' for list of valid arguments.",
 			      argv[0]);
@@ -497,7 +505,7 @@ void argclass::ProcessOptions(string_iterator *options)
 	    }
 	  mem.set(temp * 0x100000L); /* times 1 Meg. */
           continue;
-        };
+        }
       if ( strncmp(option, MEM_K_PREFIX, strlen(MEM_K_PREFIX) ) == 0 )
         {
           if ( strlen(option) <= strlen(MEM_K_PREFIX) ) /* We cannot have a space before the number */
@@ -523,7 +531,7 @@ void argclass::ProcessOptions(string_iterator *options)
 	    }
 	  mem.set(temp * 0x400L); /* times 1 Kilobyte. */
           continue;
-        };
+        }//;
 
 #ifdef HASHC
       // added by Uli
@@ -555,7 +563,7 @@ void argclass::ProcessOptions(string_iterator *options)
             Error.Notrace("Number of bits not allowed.");
           num_bits.set(temp);
           continue;
-        };
+        }//;
 
       // added by Uli
       if ( strncmp(option, TRACE_DIR_PREFIX, strlen(TRACE_DIR_PREFIX) ) == 0 )
@@ -574,7 +582,7 @@ void argclass::ProcessOptions(string_iterator *options)
           TraceFile = new TraceFileManager(temp_str);
           trace_file.set(TRUE);
           continue;
-        };
+        }//;
 #endif
 
       if ( strncmp(option, LOOPMAX_PREFIX, strlen(LOOPMAX_PREFIX) ) == 0 )
@@ -602,7 +610,7 @@ void argclass::ProcessOptions(string_iterator *options)
 	    }
 	  loopmax.set(temp);
           continue;
-        };
+        }//;
       if ( strncmp(option, PERM_LIMIT, strlen(PERM_LIMIT) ) == 0 )
         {
           if ( strlen(option) <= strlen(PERM_LIMIT) ) /* We cannot have a space before the number */
@@ -628,7 +636,7 @@ void argclass::ProcessOptions(string_iterator *options)
 	    }
 	  perm_limit.set(temp);
           continue;
-        };
+        }//;
       if ( strncmp(option, TEST1_PREFIX, strlen(TEST1_PREFIX) ) == 0 )
         {
           if ( strlen(option) <= strlen(TEST1_PREFIX) ) /* We cannot have a space before the number */
@@ -645,7 +653,7 @@ void argclass::ProcessOptions(string_iterator *options)
 	    }
 	  test_parameter1.set(temp);
           continue;
-        };
+        }//;
       if ( strncmp(option, TEST2_PREFIX, strlen(TEST2_PREFIX) ) == 0 )
         {
           if ( strlen(option) <= strlen(TEST2_PREFIX) ) /* We cannot have a space before the number */
@@ -662,7 +670,7 @@ void argclass::ProcessOptions(string_iterator *options)
 	    }
 	  test_parameter2.set(temp);
           continue;
-        };
+        }//;
       if( strcmp( option, SIMULATE_FLAG ) == 0 )
         {
           main_alg.set(argmain_alg::Simulate);
@@ -718,7 +726,7 @@ void argclass::ProcessOptions(string_iterator *options)
 	    }
 	  max_errors.set(temp); /* times 1 Meg. */
           continue;
-        };
+        }//;
       /* control frequency of printouts. */
       if ( strcmp( option, VERBOSE_FLAG ) == 0 )
         {
@@ -858,7 +866,47 @@ void argclass::ProcessOptions(string_iterator *options)
 			  temp, argv[0]);
 	  }
           continue;
-        };
+        }//;
+    // << ========================================================================================== >> 
+    // <<                                     RANDOM WALK FLAGS                                      >> 
+    // << ========================================================================================== >> 
+    
+    // << ======================== Set Random Walk Verification Algorithm ========================== >> 
+    if ( strcmp( option, VERIFY_RW_FLAG ) == 0 )
+    {
+      main_alg.set(argmain_alg::Verify_rw);
+      continue;
+    }
+
+    // << =========================== Set The Number Of Threads To Use ============================= >> 
+    if( strncmp( option, RW_PTHREAD_PREFIX, strlen(RW_PTHREAD_PREFIX) ) == 0 )
+    {
+      if ( strlen(option) <= strlen(RW_PTHREAD_PREFIX) )
+      {
+        sscanf( options->nextvalue(), "%s", temp_str );
+        if (isdigit(temp_str[0]))
+        {
+          sscanf( temp_str, "%u", (unsigned long) &temp );
+          options->next();
+        }
+        else	  
+          Error.Notrace("Unrecognized maximum number of pthreads.  Do '%s -h' for list of valid arguments.",
+                  argv[0]);
+      }
+      else
+      {
+        sscanf( options->value() + strlen(RW_PTHREAD_PREFIX), "%s", temp_str );
+        if (isdigit(temp_str[0]))
+          sscanf( temp_str, "%u", (unsigned long) &temp );
+        else	  
+          Error.Notrace("Unrecognized maximum number of pthreads.  Do '%s -h' for list of valid arguments.",
+                  argv[0]);
+      }
+      pthread_count.set(temp); 
+      continue;
+    }
+
+
 //       if ( StrStr( ALLOWED_FLAGS, option ) == NULL )
         /* strstr isn\'t in std.h.  Sheesh. And likewise bleah. */
 //         {
@@ -878,6 +926,8 @@ void argclass::PrintOptions( void )   // changes by Uli
 << "\t-l            print license.\n"
 << "2) Verification Strategy: (default: -v)\n"
 << "\t-s            simulate.\n"
+<< "\t-r            verify with the random walk strategy\n" 
+<< "\t              (use -pt flag to specify number of concurrent walks).\n"
 << "\t-v or -vbfs   verify with breadth-first search.\n"
 << "\t-vdfs         verify with depth-first search.\n"
 << "\t-ndl          do not check for deadlock.\n"
@@ -889,7 +939,13 @@ void argclass::PrintOptions( void )   // changes by Uli
 << "\t-p<n>         report progress every 10^n events, n in 1..5.\n"
 << "\t-pn           print no progress reports.\n"
 << "\t-pr           print out rule information.\n"
-<< "4) Error Trace Handling: (default: -tn)\n"
+<< "4) Random Walk and multithreading options\n"
+<< "\t-pt <n>       specify the number of threads to run random walks with\n"
+<< "\t              (default: 1).\n"
+<< "\t-rs <option>  set the random seed(s) to use **NOT YET IMPLIMENTED**\n"
+<< "\t              (default: system time at thread launch).\n"
+<< "\n-mpi          enable distributed compute with MPI **NOT YET IMPLIMENTED**\n"
+<< "5) Error Trace Handling: (default: -tn)\n"
 << "\t-tv           write a violating trace (with default -td).\n"
 << "\t-td           write only state differences from the previous states.\n"
 << "\t              (in simulation mode, write only state differences in\n"
@@ -898,7 +954,7 @@ void argclass::PrintOptions( void )   // changes by Uli
 << "\t              (in simulation mode, write full states in verbose mode.)\n"
 << "\t-ta           write all generated states at least once.\n"
 << "\t-tn           write no trace (default).\n"
-<< "5) Reduction Technique: (default: -sym3 with -permlimit 10 and multiset\n"
+<< "6) Reduction Technique: (default: -sym3 with -permlimit 10 and multiset\n"
 << "                                  reduction)\n"
 << "\t-nosym        no symmetry reduction (multiset reduction still effective)\n"
 << "\t-nomultiset   no multiset reduction\n"
@@ -916,7 +972,7 @@ void argclass::PrintOptions( void )   // changes by Uli
 << "\t                  (depends on -permlimit)\n"
 << "\t              4 | heuristic fast normalization (alg 3 with -permlimit 1)\n"
 #ifdef HASHC
-<< "6) Hash Compaction: (default: hash compaction with " << DEFAULT_BITS
+<< "7) Hash Compaction: (default: hash compaction with " << DEFAULT_BITS
   << " bits)\n"
 << "\t-b<n>         number of bits to store.\n"
 << "\t-d dir        write trace info into file dir/" 
