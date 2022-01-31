@@ -382,8 +382,8 @@ argclass::argclass(int ac, char** av)
   multiset_reduction (TRUE, "multiset option"),
   test_parameter1 (100,"testing parameter1"),
   test_parameter2 (100,"testing parameter2"),
-  // randowm walk options
-  thread_count    (1,"number of threads to use in multithreaded random walk verification"),
+  /* randowm walk options */
+  pthread_count    (1ul,"num of threads to use in multithreaded random walk verification"),
 #ifdef HASHC
   num_bits        (DEFAULT_BITS, "stored bits"),   // added by Uli
   trace_file      (FALSE, "trace info file"),
@@ -897,7 +897,7 @@ void argclass::ProcessOptions(string_iterator *options)
       {
         sscanf( options->value() + strlen(RW_PTHREAD_PREFIX), "%s", temp_str );
         if (isdigit(temp_str[0]))
-          sscanf( temp_str, "%u", (unsigned long) &temp );
+          sscanf( temp_str, "%lu", (unsigned long) &temp );
         else	  
           Error.Notrace("Unrecognized maximum number of pthreads.  Do '%s -h' for list of valid arguments.",
                   argv[0]);
