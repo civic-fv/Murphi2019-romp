@@ -126,7 +126,7 @@ int main(int argc, char **argv)
       //*  Here you go! just use the `args->pthread_count` variable to access the requested number
       //*  of threads to launch.
       printf("[DEV] :: We command line arguments for RANDOM WALK are working !! [include/mu_verifier.C]\n"
-             "           requested number of threads:  %u", args->pthread_count.value);
+             "           requested number of threads:  %lu", args->pthread_count.value);
   }
 
   cout.flush();
