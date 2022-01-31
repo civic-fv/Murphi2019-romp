@@ -255,7 +255,7 @@ public:
   argbool print_progress;
   
   // main algorithm options
-  argmain_alg valmain_alg;
+  argmain_alg main_alg;
 
   // symmetry option
   argbool symmetry_reduction;
