@@ -120,13 +120,14 @@ int main(int argc, char **argv)
     {
       Algorithm->simulate();
     }
-  else if (args->main_alg.mode == argmain_alg::Verify_rw )
+    else if (args->main_alg.mode == argmain_alg::Verify_rw )
   {
       //* TO AJENTHA:
       //*  Here you go! just use the `args->pthread_count` variable to access the requested number
       //*  of threads to launch.
       printf("[DEV] :: We command line arguments for RANDOM WALK are working !! [include/mu_verifier.C]\n"
-             "           requested number of threads:  %lu\n", args->pthread_count.value);
+             "           requested number of threads:  %lu\n\n", args->pthread_count.value);
+      parallel(args->pthread_count.value);
   }
 
   cout.flush();
@@ -174,3 +175,4 @@ int main(int argc, char **argv)
   Initial revision
 
 ********************/
+

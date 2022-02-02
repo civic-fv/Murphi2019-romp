@@ -53,6 +53,7 @@
  *
  */
 
+#include <pthread.h>     /* pthread functions and data structures */
 #include <csignal>
 
 /************************************************************/
@@ -1020,3 +1021,40 @@ AlgorithmManager::simulate()
   Initial revision
 
 ********************/
+void * threadFunc(void * arg)
+{
+    // size_t tid = pthread_getname_np();
+    size_t tid = gettid();
+    std::cout << "Thread Function :: Start :: " << tid << std::endl;
+    Algorithm->simulate();
+    std::cout << "Thread Function :: End :: " << tid << std::endl;
+    return NULL;
+}
+void  parallel(size_t pthread_count)
+{
+    pthread_t* threads = new pthread_t[pthread_count];
+    for (int i=0; i<pthread_count; i++) 
+    {
+      // Create a thread that will function threadFunc()
+      int err = pthread_create(threads+i, NULL, &threadFunc, NULL);
+      // Check if thread is created sucessfuly
+      if (err)
+      {
+        std::cout << "Thread creation failed : " << strerror(err) << std::endl;
+        // return err;
+      }
+    }
+      
+    for (size_t i = 0; i < pthread_count; i++)
+    {
+      int err = pthread_join(threads[i], NULL);
+      // check if joining is sucessful
+      if (err)
+      {
+        std::cout << "Failed to join Thread : " << strerror(err) << std::endl;
+        //return err;
+      }
+      std::cout << "Exiting Main" << std::endl;
+    }
+    
+}
