@@ -10,15 +10,15 @@ understanding ../rumur/resources/header.c.
 '''
 
 import sys
-from typing import Optional, Set
+from typing import List, Optional, Set
 
 class State(object):
 
-    def __init__(self, initial_value: int = 5, size: int = 6, previous: Optional['State'] = None):
+  def __init__(self, initial_value: int = 5, size: int = 6, previous: Optional['State'] = None):
 
-    # the state of our model; a single integer
+    # the state of our model; an array initialized with an initial value and size
          self.size = size
-         self.arr = [0] * size 
+         self.arr = [5] * size
 
     # a pointer to the previous state, for the purpose of generating counter
     # example traces
@@ -26,42 +26,42 @@ class State(object):
 
   def duplicate(self) -> 'State':
     'create a new State that will be a successor of this one'
-    return State(self.value, self)
+    return State(self.arr, self.size, self)
 
   # make objects of this type storable in a set
   def __hash__(self) -> int:
-    return self.value
+    return Sum(self) #TODO Need to revise this 
 
 def Sum(s: State) -> int:
   sum = 0
-  for i in size:
+  for i in range(0, s.size):
       sum += s.arr[i]
   return sum
 
-# an invariant we will claim, that the sum is  never negative
+# an invariant we will claim, that the sum is never negative
 def invariant(s: State) -> bool:
   return sum(s.arr) > 0
 
 
 def decrement(s: State, index) -> None:
-    if(s.arr[index]  >= 1):
-       s.arr[index]--
+  val = s.arr[index]
+  if(val >= 1):
+      s.arr[index] = s.arr[index] - 1
 
 # two rules and their accompanying guards
-def dec__guard(s: State,index) -> bool:
-  return value_at_index > 0
-def dec__rule(s: State,index) -> None:
-  decrement(index)
-  if(index + 1 < size):
-      if(arr[index + 1] > 0):
-         decrement(index + 1)
+def dec__guard(s: State, index) -> bool:
+  return s.arr[index] > 0
 
-
+def dec__rule(s: State, index) -> None:
+  decrement(s, index)
+  if(index + 1 < s.size):
+      if(s.arr[index + 1] > 0):
+         decrement(s, index + 1)
 
 # a start state that initially sets our value to 0
 def start(s: State) -> None:
-    for(i in s.size):
-        s.arr[i] = 5
+    for i in range(0, s.size):
+      s.arr[i] = 5
 
 
 def print_cex(s: State) -> None:
@@ -80,7 +80,7 @@ def main() -> int:
 
   # A queue of states to be expanded and explored. Checking is done when this
   # queue is exhausted.
-  pending: [State] = []
+  pending: List[State] = []
 
   # A set of states we have already encountered. We use this to deduplicate
   # paths during exploration and avoid repeatedly checking the same states.
@@ -93,18 +93,16 @@ def main() -> int:
 
   while len(pending) > 0:
 
-    pending_index = [0,1,2,3,4,5]
+    index = [0,1,2,3,4,5]
     # take the next state off the queue to be expanded
     n = pending.pop(0)
-
-    for i in (pending_index):
-         # try each rule on it to generate new states
-         for guard, rule in (dec_guard, dec_rule):
-
-             if guard(n,i):
-             e = n.duplicate()
-             rule(e,i)
     
+    # try each rule on it to generate new states
+    for i in index:
+        if dec__guard(n, i):
+          e = n.duplicate()
+          dec__rule(e, i)
+      
         # Here is where symmetry reduction steps would usually take place in a
         # real model checker. These are used to further deduplicate states and
         # reduce the state space. For the purposes of this example, we omit such
@@ -112,20 +110,20 @@ def main() -> int:
 
         # Have we seen this new state before? If so, we can discard it as a
         # duplicate.
-             if e in seen:
-                 continue
+        if e in seen:
+            continue
 
         # Does the state violate our invariant?
-             if not invariant(e):
-             print('counter example trace:')
-             print_cex(e)
-             return -1
+        if not invariant(e):
+          print('counter example trace:')
+          print_cex(e)
+          return -1
 
         # note that we have seen this state for future checks
-             seen.add(e)
+        seen.add(e)
 
         # add it to our queue and proceed
-            pending.append(e)
+        pending.append(e)
 
 
   print('checking complete')
